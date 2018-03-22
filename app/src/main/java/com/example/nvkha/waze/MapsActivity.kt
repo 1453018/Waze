@@ -75,36 +75,12 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
     override fun onMapReady(googleMap: GoogleMap) {
         map = googleMap
 
-        // Add a marker in Sydney and move the camera
-        /*val sydney = LatLng(-34.0, 151.0)
-        map.addMarker(MarkerOptions().position(sydney).title("Marker in Sydney"))
-        map.moveCamera(CameraUpdateFactory.newLatLng(sydney))*/
-
-
-        /*val myPlace = LatLng(40.73, -73.99)  // this is New York
-        map.addMarker(MarkerOptions().position(myPlace).title("My Favorite City"))
-        //map.moveCamera(CameraUpdateFactory.newLatLng(myPlace))
-        map.moveCamera(CameraUpdateFactory.newLatLngZoom(myPlace, 12.0f))*/
-
         map.uiSettings.isZoomControlsEnabled = true
 
 
         map.setOnMarkerClickListener(this)
 
         setUpMap()
-
-
-        map.isMyLocationEnabled = true
-
-        fusedLocationClient.lastLocation.addOnSuccessListener(this) { location ->
-            // Got last known location. In some rare situations this can be null.
-            if (location != null) {
-                lastLocation = location
-                val currentLatLng = LatLng(location.latitude, location.longitude)
-                map.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 12f))
-                options.add(currentLatLng)
-            }
-        }
     }
 
     override fun onMarkerClick(p0: Marker?) = false
@@ -126,6 +102,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
                 val currentLatLng = LatLng(location.latitude, location.longitude)
                 //placeMarkerOnMap(currentLatLng)
                 map.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 12f))
+                options.add(currentLatLng)
             }
         }
     }
