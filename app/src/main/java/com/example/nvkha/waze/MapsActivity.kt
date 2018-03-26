@@ -8,7 +8,9 @@ import android.content.pm.PackageManager
 import android.location.Address
 import android.location.Geocoder
 import android.location.Location
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
@@ -222,7 +224,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
                     // contacts-related task you need to do.
                     setUpMap()
                 } else {
-                    System.exit(0)
+                    openAppSettings()
                     // permission denied, boo! Disable the
                     // functionality that depends on this permission.
                 }
@@ -236,5 +238,13 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
                 // Ignore all other requests.
             }
         }
+    }
+
+    private fun openAppSettings(){
+        val intent = Intent()
+        intent.action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+        val uri = Uri.fromParts("package", packageName, null)
+        intent.data = uri
+        startActivity(intent)
     }
 }
