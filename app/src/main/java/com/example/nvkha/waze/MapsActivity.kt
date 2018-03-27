@@ -5,8 +5,6 @@ import android.app.Activity
 import android.content.Intent
 import android.content.IntentSender
 import android.content.pm.PackageManager
-import android.location.Address
-import android.location.Geocoder
 import android.location.Location
 import android.net.Uri
 import android.os.Bundle
@@ -14,6 +12,7 @@ import android.provider.Settings
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
+import android.widget.Toast
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -22,11 +21,9 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
-import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.maps.model.PolylineOptions
-import java.io.IOException
 
-class MapsActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerClickListener {
+class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
 
     private lateinit var map: GoogleMap
     private lateinit var fusedLocationClient: FusedLocationProviderClient
@@ -35,14 +32,19 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
     private lateinit var locationRequest: LocationRequest
     private var locationUpdateState = false
     val options = PolylineOptions()
+    private var mapReady = false
+    private var locationUpdateRunning = false
+    private var alreadyAskPermission = false
 
     companion object {
-        private const val LOCATION_PERMISSION_REQUEST_CODE = 1
-        private const val REQUEST_CHECK_SETTINGS = 2
+        private const val CODE_REQUEST_PERMISSION_FOR_UPDATE_LOCATION = 1
+        private const val CODE_REQUEST_SETTING_FOR_UPDATE_LOCATION = 2
+        private const val CODE_REQUEST_PERMISSION_FOR_SETUP_MAP = 3
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Toast.makeText(applicationContext,"On Create",Toast.LENGTH_SHORT).show()
         setContentView(R.layout.activity_maps)
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         val mapFragment = supportFragmentManager
@@ -58,9 +60,13 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
                 lastLocation = p0.lastLocation
                 //placeMarkerOnMap(LatLng(lastLocation.latitude, lastLocation.longitude))
                 options.add(LatLng(lastLocation.latitude, lastLocation.longitude))
-                map.addPolyline(options)
+                if (mapReady) {
+                    map.addPolyline(options)
+                }
             }
         }
+
+        createLocationRequest()
     }
 
     /**
@@ -80,35 +86,45 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
 
         map.setOnMarkerClickListener(this)
 
-        setUpMap()
+        if (!mapReady) {
+            setUpMapWrapper()
+        }
     }
 
-    private fun setUpMap(){
+    @SuppressLint("MissingPermission")
+    private fun setUpMap() {
+        mapReady = true
+
+        map.isMyLocationEnabled = true
+
+        fusedLocationClient.lastLocation.addOnSuccessListener(this) { location ->
+            // Got last known location. In some rare situations this can be null.
+            if (location != null) {
+                lastLocation = location
+                val currentLatLng = LatLng(location.latitude, location.longitude)
+                //placeMarkerOnMap(currentLatLng)
+                map.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 12f))
+                options.add(currentLatLng)
+            }
+        }
+    }
+
+    private fun setUpMapWrapper() {
         if (ActivityCompat.checkSelfPermission(this,
                         android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION), LOCATION_PERMISSION_REQUEST_CODE)
-        }
-        else{
-            map.isMyLocationEnabled = true
-
-            fusedLocationClient.lastLocation.addOnSuccessListener(this) { location ->
-                // Got last known location. In some rare situations this can be null.
-                if (location != null) {
-                    lastLocation = location
-                    val currentLatLng = LatLng(location.latitude, location.longitude)
-                    placeMarkerOnMap(currentLatLng)
-                    map.animateCamera(CameraUpdateFactory.newLatLngZoom(currentLatLng, 12f))
-                    options.add(currentLatLng)
-                }
+            if (!alreadyAskPermission){
+                ActivityCompat.requestPermissions(this,
+                        arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION), CODE_REQUEST_PERMISSION_FOR_SETUP_MAP)
+                alreadyAskPermission = true
             }
-
-            createLocationRequest()
+            return
         }
+        setUpMap()
     }
 
     override fun onMarkerClick(p0: Marker?) = false
 
+    /*
     private fun placeMarkerOnMap(location: LatLng) {
         val markerOptions = MarkerOptions().position(location)
 
@@ -117,7 +133,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
 
         map.addMarker(markerOptions)
     }
+    */
 
+    /*
     private fun getAddress(latLng: LatLng): String {
         // 1
         val geocoder = Geocoder(this)
@@ -141,17 +159,29 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
 
         return addressText
     }
+    */
 
+    @SuppressLint("MissingPermission")
     private fun startLocationUpdates() {
-        //1
-        if (ActivityCompat.checkSelfPermission(this,
-                        android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            return
-        }
-        //2
         fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null /* Looper */)
+        locationUpdateRunning = true
     }
 
+    private fun startLocationUpdatesWrapper() {
+        if (!mapReady || locationUpdateRunning) return
+        if (ActivityCompat.checkSelfPermission(this,
+                        android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            if (!alreadyAskPermission) {
+                ActivityCompat.requestPermissions(this,
+                        arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION), CODE_REQUEST_PERMISSION_FOR_UPDATE_LOCATION)
+                alreadyAskPermission = true
+            }
+            return
+        }
+        startLocationUpdates()
+    }
+
+    @SuppressLint("RestrictedApi")
     private fun createLocationRequest() {
         // 1
         locationRequest = LocationRequest()
@@ -171,7 +201,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
         // 5
         task.addOnSuccessListener {
             locationUpdateState = true
-            startLocationUpdates()
+            //startLocationUpdatesWrapper()
         }
         task.addOnFailureListener { e ->
             // 6
@@ -182,7 +212,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
                     // Show the dialog by calling startResolutionForResult(),
                     // and check the result in onActivityResult().
                     e.startResolutionForResult(this@MapsActivity,
-                            REQUEST_CHECK_SETTINGS)
+                            CODE_REQUEST_SETTING_FOR_UPDATE_LOCATION)
                 } catch (sendEx: IntentSender.SendIntentException) {
                     // Ignore the error.
                 }
@@ -191,32 +221,64 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_CHECK_SETTINGS) {
+        //super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == CODE_REQUEST_SETTING_FOR_UPDATE_LOCATION) {
             if (resultCode == Activity.RESULT_OK) {
                 locationUpdateState = true
-                startLocationUpdates()
+                //startLocationUpdatesWrapper()
             }
         }
     }
 
     override fun onPause() {
         super.onPause()
+        Toast.makeText(applicationContext,"On Pause",Toast.LENGTH_SHORT).show()
         fusedLocationClient.removeLocationUpdates(locationCallback)
+        locationUpdateRunning = false
+    }
+
+    public override fun onStop() {
+        super.onStop()
+        Toast.makeText(applicationContext,"On Stop",Toast.LENGTH_SHORT).show()
     }
 
     public override fun onResume() {
         super.onResume()
-        if (!locationUpdateState) {
-            startLocationUpdates()
+        Toast.makeText(applicationContext,"On Resume",Toast.LENGTH_SHORT).show()
+        if (!mapReady) {
+            setUpMapWrapper()
+        }
+        if (mapReady && locationUpdateState && !locationUpdateRunning) {
+            startLocationUpdatesWrapper()
         }
     }
 
     override fun onRequestPermissionsResult(requestCode: Int,
                                             permissions: Array<String>, grantResults: IntArray) {
-        //super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         when (requestCode) {
-            LOCATION_PERMISSION_REQUEST_CODE -> {
+            CODE_REQUEST_PERMISSION_FOR_UPDATE_LOCATION -> {
+                alreadyAskPermission = false
+                // If request is cancelled, the result arrays are empty.
+                if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
+
+                    // permission was granted, yay! Do the
+                    // contacts-related task you need to do.
+                    startLocationUpdates()
+                } else {
+
+                    Toast.makeText(applicationContext, "UPDATE LOCATION DENIED", Toast.LENGTH_LONG).show()
+                    Log.e("K", "UPDATE LOCATION DENIED")
+                    onStop()
+                    openAppSettings()
+
+                    // permission denied, boo! Disable the
+                    // functionality that depends on this permission.
+                }
+                return
+            }
+
+            CODE_REQUEST_PERMISSION_FOR_SETUP_MAP -> {
+                alreadyAskPermission = false
                 // If request is cancelled, the result arrays are empty.
                 if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
 
@@ -224,7 +286,12 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
                     // contacts-related task you need to do.
                     setUpMap()
                 } else {
+                    Toast.makeText(applicationContext, "SETUP MAP DENIED", Toast.LENGTH_LONG).show()
+                    Log.e("K", "SETUP MAP DENIED")
+                    onStop()
                     openAppSettings()
+
+
                     // permission denied, boo! Disable the
                     // functionality that depends on this permission.
                 }
@@ -240,7 +307,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,GoogleMap.OnMarkerC
         }
     }
 
-    private fun openAppSettings(){
+    private fun openAppSettings() {
         val intent = Intent()
         intent.action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
         val uri = Uri.fromParts("package", packageName, null)
