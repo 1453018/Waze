@@ -11,8 +11,6 @@ import android.os.Bundle
 import android.provider.Settings
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
-import android.util.Log
-import android.widget.Toast
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -33,8 +31,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private var locationUpdateState = false
     val options = PolylineOptions()
     private var mapReady = false
+    private var mapSetup = false
     private var locationUpdateRunning = false
     private var alreadyAskPermission = false
+    private var resumeFromRequestPermissionFail = false
 
     companion object {
         private const val CODE_REQUEST_PERMISSION_FOR_UPDATE_LOCATION = 1
@@ -44,7 +44,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Toast.makeText(applicationContext,"On Create",Toast.LENGTH_SHORT).show()
+        //Toast.makeText(this,"On Create",Toast.LENGTH_SHORT).show()
         setContentView(R.layout.activity_maps)
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         val mapFragment = supportFragmentManager
@@ -82,18 +82,19 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     override fun onMapReady(googleMap: GoogleMap) {
         map = googleMap
 
+        mapReady = true
+
         map.uiSettings.isZoomControlsEnabled = true
 
         map.setOnMarkerClickListener(this)
 
-        if (!mapReady) {
+        if (!mapSetup) {
             setUpMapWrapper()
         }
     }
 
     @SuppressLint("MissingPermission")
     private fun setUpMap() {
-        mapReady = true
 
         map.isMyLocationEnabled = true
 
@@ -107,9 +108,12 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                 options.add(currentLatLng)
             }
         }
+
+        mapSetup = true
     }
 
     private fun setUpMapWrapper() {
+        if (!mapReady) return
         if (ActivityCompat.checkSelfPermission(this,
                         android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             if (!alreadyAskPermission){
@@ -168,7 +172,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     }
 
     private fun startLocationUpdatesWrapper() {
-        if (!mapReady || locationUpdateRunning) return
+        if (!mapSetup || locationUpdateRunning) return
         if (ActivityCompat.checkSelfPermission(this,
                         android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             if (!alreadyAskPermission) {
@@ -232,25 +236,26 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
     override fun onPause() {
         super.onPause()
-        Toast.makeText(applicationContext,"On Pause",Toast.LENGTH_SHORT).show()
+        //Toast.makeText(this,"On Pause",Toast.LENGTH_SHORT).show()
         fusedLocationClient.removeLocationUpdates(locationCallback)
         locationUpdateRunning = false
     }
 
     public override fun onStop() {
         super.onStop()
-        Toast.makeText(applicationContext,"On Stop",Toast.LENGTH_SHORT).show()
+        //Toast.makeText(this,"On Stop",Toast.LENGTH_SHORT).show()
     }
 
     public override fun onResume() {
         super.onResume()
-        Toast.makeText(applicationContext,"On Resume",Toast.LENGTH_SHORT).show()
-        if (!mapReady) {
+        //Toast.makeText(this,"On Resume",Toast.LENGTH_SHORT).show()
+        if (!mapSetup && !resumeFromRequestPermissionFail) {
             setUpMapWrapper()
         }
-        if (mapReady && locationUpdateState && !locationUpdateRunning) {
+        if (mapSetup && locationUpdateState && !locationUpdateRunning&& !resumeFromRequestPermissionFail) {
             startLocationUpdatesWrapper()
         }
+        resumeFromRequestPermissionFail=false
     }
 
     override fun onRequestPermissionsResult(requestCode: Int,
@@ -266,9 +271,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                     startLocationUpdates()
                 } else {
 
-                    Toast.makeText(applicationContext, "UPDATE LOCATION DENIED", Toast.LENGTH_LONG).show()
-                    Log.e("K", "UPDATE LOCATION DENIED")
-                    onStop()
+                    //Toast.makeText(this, "UPDATE LOCATION DENIED", Toast.LENGTH_LONG).show()
+                    //Log.e("K", "UPDATE LOCATION DENIED")
+                    resumeFromRequestPermissionFail = true;
                     openAppSettings()
 
                     // permission denied, boo! Disable the
@@ -286,9 +291,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
                     // contacts-related task you need to do.
                     setUpMap()
                 } else {
-                    Toast.makeText(applicationContext, "SETUP MAP DENIED", Toast.LENGTH_LONG).show()
-                    Log.e("K", "SETUP MAP DENIED")
-                    onStop()
+                    //Toast.makeText(this, "SETUP MAP DENIED", Toast.LENGTH_LONG).show()
+                    //Log.e("K", "SETUP MAP DENIED")
+                    resumeFromRequestPermissionFail = true;
                     openAppSettings()
 
 
