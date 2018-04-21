@@ -45,7 +45,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         //Toast.makeText(this,"On Create",Toast.LENGTH_SHORT).show()
-        setContentView(R.layout.activity_maps)
+        setContentView(R.layout.activity_main)
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         val mapFragment = supportFragmentManager
                 .findFragmentById(R.id.map) as SupportMapFragment
@@ -84,7 +84,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
 
         mapReady = true
 
-        map.uiSettings.isZoomControlsEnabled = true
+        //map.uiSettings.isZoomControlsEnabled = true
 
         map.setOnMarkerClickListener(this)
 
