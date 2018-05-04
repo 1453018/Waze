@@ -9,28 +9,28 @@
         android:id="@+id/include"
         layout="@layout/activity_maps" />
 
-    <com.arlib.floatingsearchview.FloatingSearchView
-        android:id="@+id/floating_search_view"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_alignParentBottom="true"
-        android:layout_marginBottom="8dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginLeft="8dp"
-        android:layout_marginRight="8dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
-        app:floatingSearch_close_search_on_keyboard_dismiss="true"
-        app:floatingSearch_leftActionMode="showHamburger"
-        app:floatingSearch_searchHint="Search..."
-        app:floatingSearch_showSearchKey="false"
-        app:floatingSearch_suggestionsListAnimDuration="250"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+    <!--<com.arlib.floatingsearchview.FloatingSearchView-->
+        <!--android:id="@+id/floating_search_view"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="match_parent"-->
+        <!--android:layout_alignParentBottom="true"-->
+        <!--android:layout_marginBottom="8dp"-->
+        <!--android:layout_marginEnd="8dp"-->
+        <!--android:layout_marginLeft="8dp"-->
+        <!--android:layout_marginRight="8dp"-->
+        <!--android:layout_marginStart="8dp"-->
+        <!--android:layout_marginTop="8dp"-->
+        <!--app:floatingSearch_close_search_on_keyboard_dismiss="true"-->
+        <!--app:floatingSearch_leftActionMode="showHamburger"-->
+        <!--app:floatingSearch_searchHint="Search..."-->
+        <!--app:floatingSearch_showSearchKey="false"-->
+        <!--app:floatingSearch_suggestionsListAnimDuration="250"-->
+        <!--app:layout_constraintBottom_toBottomOf="parent"-->
+        <!--app:layout_constraintEnd_toEndOf="parent"-->
+        <!--app:layout_constraintStart_toStartOf="parent"-->
+        <!--app:layout_constraintTop_toTopOf="parent">-->
 
-    </com.arlib.floatingsearchview.FloatingSearchView>
+    <!--</com.arlib.floatingsearchview.FloatingSearchView>-->
 
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/my_loc_btn"

@@ -11,15 +11,23 @@ import android.os.Bundle
 import android.provider.Settings
 import android.support.v4.app.ActivityCompat
 import android.support.v7.app.AppCompatActivity
+import android.util.Log
 import com.google.android.gms.common.api.ResolvableApiException
+import com.google.android.gms.common.api.Status
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.Marker
-import com.google.android.gms.maps.model.PolylineOptions
+import com.google.android.gms.location.places.ui.PlaceAutocompleteFragment
+import com.google.android.gms.location.places.Place
+import com.google.android.gms.location.places.ui.PlaceSelectionListener
+import com.google.android.gms.maps.model.*
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.MarkerOptions
+
+
+
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarkerClickListener {
 
@@ -36,6 +44,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     private var alreadyAskPermission = false
     private var resumeFromRequestPermissionFail = false
 
+    // PlaceAutoCompleteFragment
+    private var placeAutoComplete: PlaceAutocompleteFragment? = null
+
     companion object {
         private const val CODE_REQUEST_PERMISSION_FOR_UPDATE_LOCATION = 1
         private const val CODE_REQUEST_SETTING_FOR_UPDATE_LOCATION = 2
@@ -46,6 +57,21 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         super.onCreate(savedInstanceState)
         //Toast.makeText(this,"On Create",Toast.LENGTH_SHORT).show()
         setContentView(R.layout.activity_main)
+
+        placeAutoComplete = fragmentManager.findFragmentById(R.id.place_autocomplete) as PlaceAutocompleteFragment
+        placeAutoComplete!!.setOnPlaceSelectedListener(object : PlaceSelectionListener {
+            override fun onPlaceSelected(place: Place) {
+
+                Log.d("Maps", "Place selected: " + place.name)
+                addMarker(place);
+
+            }
+
+            override fun onError(status: Status) {
+                Log.d("Maps", "An error occurred: $status")
+            }
+        })
+
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         val mapFragment = supportFragmentManager
                 .findFragmentById(R.id.map) as SupportMapFragment
@@ -319,4 +345,17 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
         intent.data = uri
         startActivity(intent)
     }
+
+    fun addMarker(p: Place) {
+        val markerOptions = MarkerOptions()
+        markerOptions.position(p.latLng)
+        markerOptions.title(p.name.toString() + "")
+        markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
+
+        map.addMarker(markerOptions)
+        map.moveCamera(CameraUpdateFactory.newLatLng(p.latLng))
+        map.animateCamera(CameraUpdateFactory.zoomTo(13f))
+    }
 }
+
+
