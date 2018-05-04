@@ -5,6 +5,7 @@ import android.app.Activity
 import android.content.Intent
 import android.content.IntentSender
 import android.content.pm.PackageManager
+import android.content.res.Resources
 import android.location.Location
 import android.net.Uri
 import android.os.Bundle
@@ -107,6 +108,21 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleMap.OnMarker
     @SuppressLint("MissingPermission")
     override fun onMapReady(googleMap: GoogleMap) {
         map = googleMap
+
+        // Try catch parsing style json file to map
+        try {
+            // Customise the styling of the base map using a JSON object defined
+            // in a raw resource file.
+            var success = googleMap.setMapStyle(
+                    MapStyleOptions.loadRawResourceStyle(
+                            this, R.raw.style_json))
+
+            if (!success) {
+                Log.e("Resources", "Style parsing failed.")
+            }
+        } catch (e: Resources.NotFoundException) {
+            Log.e("Resources", "Can't find style. Error: ", e)
+        }
 
         mapReady = true
 
